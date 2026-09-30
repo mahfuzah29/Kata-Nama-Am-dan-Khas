@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KEM-KaNAK: Kembara Kata Nama Am dan Kata Nama Khas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --font-main: 'Lexend', sans-serif;
+            --bg-sky: #87CEEB;
+            --road-gray: #4A5568;
+            --grass-green: #48BB78;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: #0F172A;
+            color: #1E293B;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        /* High contrast focus and outlines for visual accessibility */
+        *:focus-visible {
+            outline: 4px solid #F59E0B !important;
+            outline-offset: 4px;
+        }
+
+        /* Large readability text container styling */
+        .sentence-box {
+            background-color: #FFFFFF;
+            border: 6px solid #2563EB;
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+            border-radius: 1.5rem;
+        }
+
+        /* Custom road & scenery canvas animations */
+        .scenery-bg {
+            background: linear-gradient(180deg, #38BDF8 0%, #BAE6FD 60%, #4ADE80 60%, #22C55E 100%);
+        }
+
+        .road-stripes {
+            background: repeating-linear-gradient(
+                90deg,
+                #FFFFFF 0px,
+                #FFFFFF 30px,
+                transparent 30px,
+                transparent 60px
+            );
+        }
+
+        /* Smooth animated transitions for Russell's Car */
+        .car-container {
+            transition: transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1), left 1.2s ease-in-out;
+        }
+
+        .car-drive {
+            animation: driveBounce 0.4s infinite alternate ease-in-out;
+        }
+
+        @keyframes driveBounce {
+            0% { transform: translateY(0px) rotate(0deg); }
+            100% { transform: translateY(-4px) rotate(1deg); }
+        }
+
+        .car-pass-obstacle {
+            animation: passObstacle 1.8s ease-in-out forwards;
+        }
+
+        @keyframes passObstacle {
+            0% { transform: translateX(0) translateY(0); }
+            30% { transform: translateX(120px) translateY(-35px) rotate(-8deg); }
+            60% { transform: translateX(250px) translateY(0) rotate(5deg); }
+            100% { transform: translateX(400px) translateY(0) rotate(0deg); }
+        }
+
+        /* Speech Pulse Effect */
+        .mic-listening {
+            animation: pulseMic 1.2s infinite;
+        }
+
+        @keyframes pulseMic {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        /* Accessible Modal Styling */
+        .accessible-card {
+            border: 4px solid #1E293B;
+            box-shadow: 0 10px 0 0 #1E293B;
+        }
+
+        .accessible-btn {
+            border: 4px solid #000;
+            box-shadow: 0 6px 0 0 #000;
+            transition: all 0.1s ease;
+        }
+
+        .accessible-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 0 #000;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between items-center p-2 sm:p-4">
+
+    <header class="w-full max-w-5xl bg-amber-400 border-4 border-slate-900 rounded-2xl p-3 sm:p-4 mb-3 shadow-lg flex flex-wrap justify-between items-center gap-2">
+        <div class="flex items-center gap-3">
+            <span class="text-3xl sm:text-4xl">🚗</span>
+            <div>
+                <h1 class="text-xl sm:text-3xl font-extrabold text-slate-900 tracking-wide">KEM-KaNAK</h1>
+                <p class="text-xs sm:text-base font-bold text-slate-800">Kembara Kata Nama Am & Khas</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3 sm:gap-6 bg-white py-2 px-4 rounded-xl border-2 border-slate-900">
+            <div class="text-center">
+                <span class="text-xs text-slate-500 font-bold block">TAHAP</span>
+                <span id="level-display" class="text-lg sm:text-2xl font-black text-blue-700">1 / 30</span>
+            </div>
+            <div class="h-8 w-1 bg-slate-300 rounded"></div>
+            <div class="text-center">
+                <span class="text-xs text-slate-500 font-bold block">MARKAH</span>
+                <span id="score-display" class="text-lg sm:text-2xl font-black text-amber-600">0</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="w-full max-w-5xl flex-grow flex flex-col gap-4">
+        
+        <!-- Progress Bar -->
+        <div class="w-full bg-slate-800 border-2 border-slate-900 rounded-full h-6 p-1 relative overflow-hidden">
+            <div id="progress-bar-fill" class="bg-gradient-to-r from-emerald-400 to-green-500 h-full rounded-full transition-all duration-500" style="width: 3.33%;"></div>
+            <span id="progress-text" class="absolute inset-0 flex items-center justify-center text-xs font-black text-white drop-shadow">3% SAMPAI PUNCAK BAHASA</span>
+        </div>
+
+        <!-- Scenery Canvas / Animation Track -->
+        <div class="relative w-full h-48 sm:h-64 scenery-bg rounded-3xl border-4 border-slate-900 overflow-hidden shadow-xl">
+            <!-- Background Decorations -->
+            <div class="absolute top-3 left-6 text-4xl sm:text-5xl opacity-80">☁️</div>
+            <div class="absolute top-6 left-1/2 text-3xl sm:text-4xl opacity-70">☁️</div>
+            <div class="absolute top-2 right-12 text-4xl sm:text-5xl opacity-80">☁️</div>
+            
+            <!-- School / Scenery Landmarks -->
+            <div id="landmark-icon" class="absolute bottom-20 right-8 text-6xl sm:text-8xl">🏫</div>
+            <div class="absolute bottom-20 left-10 text-5xl sm:text-7xl">🌳</div>
+            <div class="absolute bottom-20 left-1/3 text-4xl sm:text-6xl">🌲</div>
+
+            <!-- Road Surface -->
+            <div class="absolute bottom-0 w-full h-20 sm:h-24 bg-slate-700 border-t-8 border-amber-300 flex items-center overflow-hidden">
+                <div class="w-full h-3 road-stripes"></div>
+            </div>
+
+            <!-- Obstacle Element -->
+            <div id="obstacle-container" class="absolute bottom-8 left-2/3 transform -translate-x-1/2 text-5xl sm:text-7xl transition-all duration-300">
+                🚧
+            </div>
+
+            <!-- Russell's Cartoon Car -->
+            <div id="car-wrapper" class="car-container absolute bottom-6 left-8 sm:left-12 flex flex-col items-center">
+                <!-- Dialogue Bubble -->
+                <div id="russell-bubble" class="bg-white border-2 border-slate-900 rounded-xl px-3 py-1 text-xs sm:text-sm font-extrabold mb-1 shadow-md text-slate-800 whitespace-nowrap">
+                    Jom kembara! 🚗
+                </div>
+                <!-- SVG Cartoon Car with Russell -->
+                <div class="car-drive relative w-28 h-16 sm:w-36 sm:h-20">
+                    <svg viewBox="0 0 200 120" class="w-full h-full drop-shadow-md">
+                        <!-- Wheels -->
+                        <circle cx="45" cy="95" r="20" fill="#1E293B" />
+                        <circle cx="45" cy="95" r="8" fill="#94A3B8" />
+                        <circle cx="155" cy="95" r="20" fill="#1E293B" />
+                        <circle cx="155" cy="95" r="8" fill="#94A3B8" />
+                        <!-- Car Body -->
+                        <path d="M 15 70 Q 15 50 35 50 L 50 50 L 70 20 Q 85 10 120 10 L 150 20 Q 170 30 185 50 L 190 70 Q 195 90 175 90 L 25 90 Q 15 90 15 70 Z" fill="#EF4444" stroke="#0F172A" stroke-width="5"/>
+                        <!-- Roof / Window -->
+                        <path d="M 72 22 L 118 22 Q 130 22 142 32 L 155 50 L 60 50 Z" fill="#38BDF8" stroke="#0F172A" stroke-width="4"/>
+                        <!-- Driver Russell (Cute Bear/Boy Character) -->
+                        <circle cx="95" cy="36" r="12" fill="#FDBA74" />
+                        <circle cx="91" cy="33" r="2" fill="#000" />
+                        <circle cx="99" cy="33" r="2" fill="#000" />
+                        <path d="M 92 41 Q 95 44 98 41" fill="none" stroke="#000" stroke-width="2" />
+                        <!-- Cap -->
+                        <path d="M 83 28 Q 95 20 107 28" fill="#2563EB" stroke="#0F172A" stroke-width="3" />
+                        <!-- Headlights -->
+                        <circle cx="185" cy="65" r="6" fill="#FEF08A" stroke="#0F172A" stroke-width="2" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="sentence-box p-4 sm:p-6 text-center relative flex flex-col justify-between min-h-[220px]">
+            <!-- Section Badge -->
+            <div id="section-badge" class="self-center bg-blue-100 text-blue-900 border-2 border-blue-600 px-4 py-1 rounded-full text-xs sm:text-sm font-extrabold uppercase tracking-wide mb-2">
+                BAHAGIAN 1: KENALI KATA NAMA AM
+            </div>
+
+            <!-- Target Instruction & Sentence View -->
+            <div class="my-2">
+                <p id="instruction-label" class="text-sm sm:text-lg text-slate-600 font-bold mb-2">
+                    Langkah 1: Kenal pasti kata nama dalam ayat di bawah
+                </p>
+                <div id="sentence-display" class="text-2xl sm:text-4xl font-black text-slate-900 leading-relaxed tracking-wide px-2 py-3 bg-amber-50 rounded-2xl border-2 border-amber-200">
+                    "Murid membaca buku di dalam kelas."
+                </div>
+            </div>
+
+            <!-- Audio Listen Helper Button -->
+            <div class="mt-2">
+                <button id="btn-listen" onclick="playSentenceTTS()" class="accessible-btn bg-amber-400 hover:bg-amber-300 text-slate-900 font-extrabold text-base sm:text-lg px-6 py-2 rounded-xl flex items-center justify-center gap-2 mx-auto">
+                    <span>🔊</span> DENGAR AYAT
+                </button>
+            </div>
+        </div>
+
+        <div id="interactive-panel" class="bg-slate-800 border-4 border-slate-900 rounded-3xl p-4 sm:p-6 shadow-xl flex flex-col items-center gap-4">
+            
+            <!-- STEP 1: Noun Selection Options -->
+            <div id="step-grammar-container" class="w-full flex flex-col items-center gap-3">
+                <h3 id="question-prompt" class="text-white text-base sm:text-xl font-extrabold text-center">
+                    Apakah jenis Kata Nama bagi perkataan yang ditegaskan?
+                </h3>
+                <div id="options-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-2xl">
+                    <!-- Dynamic Buttons Generated via JS -->
+                </div>
+            </div>
+
+            <!-- STEP 2: Speech Pronunciation Interface (Hidden until Grammar is correct) -->
+            <div id="step-speech-container" class="w-full hidden flex-col items-center gap-3">
+                <div class="bg-emerald-900/60 border-2 border-emerald-400 text-emerald-200 px-4 py-2 rounded-xl text-center font-bold text-sm sm:text-base">
+                    ✓ Jawapan jenis kata nama BETUL! Sekarang, sila sebut ayat tersebut.
+                </div>
+
+                <p class="text-white font-extrabold text-lg sm:text-xl text-center">
+                    Tekan butang di bawah & baca ayat dengan jelas:
+                </p>
+
+                <button id="btn-mic" onclick="toggleSpeechRecognition()" class="accessible-btn bg-red-600 hover:bg-red-500 text-white font-black text-xl sm:text-2xl py-4 px-8 rounded-2xl flex items-center justify-center gap-3 w-full max-w-md shadow-2xl">
+                    <span id="mic-icon" class="text-3xl">🎤</span>
+                    <span id="mic-text">SEBUT AYAT</span>
+                </button>
+
+                <!-- Speech Status Feedback Label -->
+                <p id="speech-status" class="text-amber-300 font-bold text-sm sm:text-lg text-center min-h-[28px]">
+                    Sedia untuk mendengar sebutan anda...
+                </p>
+
+                <!-- Demo / Fallback Manual Pronounce Trigger -->
+                <button id="btn-speech-fallback" onclick="simulateSpeechSuccess()" class="text-xs text-slate-400 hover:text-white underline mt-1">
+                    (Masalah Mikrofon? Tekan di sini untuk Ujian Sebutan Manual)
+                </button>
+            </div>
+
+            <!-- STEP 3: Level Completed Next Button Container -->
+            <div id="step-next-container" class="w-full hidden flex-col items-center gap-3">
+                <div class="text-center text-emerald-400 font-black text-2xl sm:text-3xl animate-bounce">
+                    🎉 TAHNIAH! HALANGAN DITUMPUKAN! (+10 MATA)
+                </div>
+                <button id="btn-next-level" onclick="goToNextLevel()" class="accessible-btn bg-green-500 hover:bg-green-400 text-slate-900 font-black text-xl sm:text-3xl py-4 px-10 rounded-2xl flex items-center justify-center gap-3 shadow-2xl transform hover:scale-105">
+                    <span>TAHAP SETERUSNYA</span> ➔
+                </button>
+            </div>
+
+            <!-- General Feedback Banner -->
+            <div id="feedback-banner" class="w-full hidden text-center py-3 px-4 rounded-xl font-black text-lg sm:text-xl"></div>
+        </div>
+    </main>
+
+    <div id="completion-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 hidden flex justify-center items-center p-4">
+        <div class="accessible-card bg-amber-400 max-w-lg w-full rounded-3xl p-6 sm:p-8 text-center flex flex-col items-center gap-4">
+            <div class="text-6xl sm:text-7xl">🏔️🏆</div>
+            <h2 class="text-2xl sm:text-4xl font-black text-slate-900">PUNCAK BAHASA DICAPAI!</h2>
+            <p class="text-base sm:text-xl font-bold text-slate-800">
+                Tahniah! Kamu telah berjaya menamatkan KEM-KaNAK dan menguasai Kata Nama Am & Kata Nama Khas!
+            </p>
+
+            <div class="bg-white border-4 border-slate-900 rounded-2xl p-4 w-full flex justify-around">
+                <div>
+                    <span class="text-xs font-bold text-slate-500 block">MARKAH AKHIR</span>
+                    <span id="final-score" class="text-3xl font-black text-amber-600">300</span>
+                </div>
+                <div class="border-r-2 border-slate-300"></div>
+                <div>
+                    <span class="text-xs font-bold text-slate-500 block">TAHAP SELESAI</span>
+                    <span class="text-3xl font-black text-blue-600">30 / 30</span>
+                </div>
+            </div>
+
+            <button onclick="restartGame()" class="accessible-btn bg-blue-600 hover:bg-blue-500 text-white font-black text-xl py-4 px-8 rounded-2xl w-full">
+                🔄 MAIN LAGI
+            </button>
+        </div>
+    </div>
+
+    <script>
+        /* ==========================================================================
+           GAME DATASET - 30 LEVELS ACROSS 3 SECTIONS
+           ========================================================================== */
+        const GAME_LEVELS = [
+            // BAHAGIAN 1: KATA NAMA AM (1-10)
+            { section: 1, title: "BAHAGIAN 1: KENALI KATA NAMA AM", sentence: "Murid membaca buku di dalam kelas.", targetWord: "buku", question: "Apakah jenis bagi perkataan 'buku'?", correctType: "AM", options: ["Kata Nama Am", "Kata Nama Khas"], obstacle: "🚧" },
+            { section: 1, title: "BAHAGIAN 1: KENALI KATA NAMA AM", sentence: "Guru menulis di papan putih.", targetWord: "guru", question: "Apakah jenis bagi perkataan 'guru'?", correctType: "AM", options: ["Kata Nama Am", "Kata Nama Khas"], obstacle: "🪨" },
+            { section: 1, title: "BAHAGIAN 1: KENALI KATA NAMA AM", sentence: "Aina membawa beg ke sekolah.", targetWord: "beg", question: "Apakah jenis bagi perkataan 'beg'?", correctType: "AM", options: ["Kata Nama Am", "Kata Nama Khas"], obstacle: "🛑" },
+            { section: 1, title: "BAHAGIAN 1: KENALI KATA NAMA AM", sentence: "Murid duduk di atas kerusi.", targetWord: "kerusi", question: "Apakah jenis bagi perkataan 'kerusi'?", correctType: "AM", options: ["Kata Nama Am", "Kata Nama Khas"], obstacle: "🪵" },
+            { section: 1, title: "BAHAGIAN 1: KENALI KATA NAMA AM", sentence: "Cikgu membawa buku ke dalam kelas.", targetWord: "kelas", question: "Apakah jenis bagi perkataan 'kelas'?", correctType: "AM", options: ["Kata Nama Am", "Kata Nama Khas"], obstacle: "🚧" },
+            { section: 1, title: "BAHAGIAN 1: KENALI KATA NAMA AM", sentence: "Murid bermain bola di padang.", targetWord: "bola", question: "Apakah jenis bagi perkataan 'bola'?", correctType: "AM", options: ["Kata Nama Am", "Kata Nama Khas"], obstacle: "🪨" },
+            { section: 1, title: "BAHAGIAN 1: KENALI KATA NAMA AM", sentence: "Guru berdiri di hadapan murid.", targetWord: "murid", question: "Apakah jenis bagi perkataan 'murid'?", correctType: "AM", options: ["Kata Nama Am", "Kata Nama Khas"], obstacle: "🛑" },
+            { section: 1, title: "BAHAGIAN 1: KENALI KATA NAMA AM", sentence: "Murid membaca buku di perpustakaan.", targetWord: "perpustakaan", question: "Apakah jenis bagi perkataan 'perpustakaan'?", correctType: "AM", options: ["Kata Nama Am", "Kata Nama Khas"], obstacle: "🚧" },
+            { section: 1, title: "BAHAGIAN 1: KENALI KATA NAMA AM", sentence: "Mereka membeli makanan di kantin.", targetWord: "kantin", question: "Apakah jenis bagi perkataan 'kantin'?", correctType: "AM", options: ["Kata Nama Am", "Kata Nama Khas"], obstacle: "🪵" },
+            { section: 1, title: "BAHAGIAN 1: KENALI KATA NAMA AM", sentence: "Murid menyusun kerusi di dalam kelas.", targetWord: "kerusi", question: "Apakah jenis bagi perkataan 'kerusi'?", correctType: "AM", options: ["Kata Nama Am", "Kata Nama Khas"], obstacle: "🪨" },
+
+            // BAHAGIAN 2: KATA NAMA KHAS (11-20)
+            { section: 2, title: "BAHAGIAN 2: KENALI KATA NAMA KHAS", sentence: "Amir belajar di SK Seri Kelebang.", targetWord: "SK Seri Kelebang", question: "Apakah jenis bagi 'SK Seri Kelebang'?", correctType: "KHAS", options: ["Kata Nama Am", "Kata Nama Khas"], obstacle: "🚧" },
+            { section: 2, title: "BAHAGIAN 2: KENALI KATA NAMA KHAS", sentence: "Cikgu Siti mengajar Bahasa Melayu.", targetWord: "Cikgu Siti", question: "Apakah jenis bagi nama 'Cikgu Siti'?", correctType: "KHAS", options: ["Kata Nama Am", "Kata Nama Khas"], obstacle: "🛑" },
+            { section: 2, title: "BAHAGIAN 2: KENALI KATA NAMA KHAS", sentence: "Aisyah tinggal di Taman Seri Impian.", targetWord: "Taman Seri Impian", question: "Apakah jenis bagi 'Taman Seri Impian'?", correctType: "KHAS", options: ["Kata Nama Am", "Kata Nama Khas"], obstacle: "🪵" },
+            { section: 2, title: "BAHAGIAN 2: KENALI KATA NAMA KHAS", sentence: "Pakcik Zainal menjaga pintu pagar sekolah.", targetWord: "Pakcik Zainal", question: "Apakah jenis bagi 'Pakcik Zainal'?", correctType: "KHAS", options: ["Kata Nama Am", "Kata Nama Khas"], obstacle: "🪨" },
+            { section: 2, title: "BAHAGIAN 2: KENALI KATA NAMA KHAS", sentence: "Murid berjalan melalui Jalan Merdeka.", targetWord: "Jalan Merdeka", question: "Apakah jenis bagi 'Jalan Merdeka'?", correctType: "KHAS", options: ["Kata Nama Am", "Kata Nama Khas"], obstacle: "🚧" },
+            { section: 2, title: "BAHAGIAN 2: KENALI KATA NAMA KHAS", sentence: "Amir dan Aisyah belajar bersama.", targetWord: "Amir", question: "Apakah jenis bagi nama 'Amir'?", correctType: "KHAS", options: ["Kata Nama Am", "Kata Nama Khas"], obstacle: "🛑" },
+            { section: 2, title: "BAHAGIAN 2: KENALI KATA NAMA KHAS", sentence: "Cikgu Siti membawa murid ke Perpustakaan Seri Bestari.", targetWord: "Perpustakaan Seri Bestari", question: "Apakah jenis bagi 'Perpustakaan Seri Bestari'?", correctType: "KHAS", options: ["Kata Nama Am", "Kata Nama Khas"], obstacle: "🪨" },
+            { section: 2, title: "BAHAGIAN 2: KENALI KATA NAMA KHAS", sentence: "SK Seri Kelebang mengadakan lawatan sekolah.", targetWord: "SK Seri Kelebang", question: "Apakah jenis bagi 'SK Seri Kelebang'?", correctType: "KHAS", options: ["Kata Nama Am", "Kata Nama Khas"], obstacle: "🪵" },
+            { section: 2, title: "BAHAGIAN 2: KENALI KATA NAMA KHAS", sentence: "Aisyah membaca buku tentang Malaysia.", targetWord: "Malaysia", question: "Apakah jenis bagi nama negara 'Malaysia'?", correctType: "KHAS", options: ["Kata Nama Am", "Kata Nama Khas"], obstacle: "🚧" },
+            { section: 2, title: "BAHAGIAN 2: KENALI KATA NAMA KHAS", sentence: "Murid melawat Muzium Negara bersama Cikgu Siti.", targetWord: "Muzium Negara", question: "Apakah jenis bagi 'Muzium Negara'?", correctType: "KHAS", options: ["Kata Nama Am", "Kata Nama Khas"], obstacle: "🛑" },
+
+            // BAHAGIAN 3: CABARAN AM ATAU KHAS (21-30)
+            { section: 3, title: "BAHAGIAN 3: CABARAN AM OR KHAS", sentence: "Amir membaca buku di dalam kelas.", targetWord: "kelas", question: "Kenal pasti jenis bagi perkataan 'kelas':", correctType: "AM", options: ["Kata Nama Am", "Kata Nama Khas"], obstacle: "🪨" },
+            { section: 3, title: "BAHAGIAN 3: CABARAN AM OR KHAS", sentence: "Cikgu Siti mengajar murid di SK Seri Kelebang.", targetWord: "Cikgu Siti", question: "Kenal pasti jenis bagi perkataan 'Cikgu Siti':", correctType: "KHAS", options: ["Kata Nama Am", "Kata Nama Khas"], obstacle: "🚧" },
+            { section: 3, title: "BAHAGIAN 3: CABARAN AM OR KHAS", sentence: "Aisyah bermain bola di padang sekolah.", targetWord: "bola", question: "Kenal pasti jenis bagi perkataan 'bola':", correctType: "AM", options: ["Kata Nama Am", "Kata Nama Khas"], obstacle: "🪵" },
+            { section: 3, title: "BAHAGIAN 3: CABARAN AM OR KHAS", sentence: "Pakcik Zainal menjaga pintu pagar SK Seri Kelebang.", targetWord: "SK Seri Kelebang", question: "Kenal pasti jenis bagi perkataan 'SK Seri Kelebang':", correctType: "KHAS", options: ["Kata Nama Am", "Kata Nama Khas"], obstacle: "🛑" },
+            { section: 3, title: "BAHAGIAN 3: CABARAN AM OR KHAS", sentence: "Amir pergi ke Taman Seri Impian.", targetWord: "Taman Seri Impian", question: "Kenal pasti jenis bagi perkataan 'Taman Seri Impian':", correctType: "KHAS", options: ["Kata Nama Am", "Kata Nama Khas"], obstacle: "🪨" },
+            { section: 3, title: "BAHAGIAN 3: CABARAN AM OR KHAS", sentence: "Cikgu Siti membawa murid ke Muzium Negara.", targetWord: "murid", question: "Kenal pasti jenis bagi perkataan 'murid':", correctType: "AM", options: ["Kata Nama Am", "Kata Nama Khas"], obstacle: "🚧" },
+            { section: 3, title: "BAHAGIAN 3: CABARAN AM OR KHAS", sentence: "Aisyah membaca buku di perpustakaan.", targetWord: "Aisyah", question: "Kenal pasti jenis bagi perkataan 'Aisyah':", correctType: "KHAS", options: ["Kata Nama Am", "Kata Nama Khas"], obstacle: "🪵" },
+            { section: 3, title: "BAHAGIAN 3: CABARAN AM OR KHAS", sentence: "Mereka melawat Muzium Negara pada hari Sabtu.", targetWord: "Muzium Negara", question: "Kenal pasti jenis bagi perkataan 'Muzium Negara':", correctType: "KHAS", options: ["Kata Nama Am", "Kata Nama Khas"], obstacle: "🛑" },
+            { section: 3, title: "BAHAGIAN 3: CABARAN AM OR KHAS", sentence: "Guru menulis jawapan di papan putih.", targetWord: "papan putih", question: "Kenal pasti jenis bagi perkataan 'papan putih':", correctType: "AM", options: ["Kata Nama Am", "Kata Nama Khas"], obstacle: "🪨" },
+            { section: 3, title: "BAHAGIAN 3: CABARAN AM OR KHAS", sentence: "Amir dan Aisyah bangga dengan Malaysia.", targetWord: "Malaysia", question: "Kenal pasti jenis bagi perkataan 'Malaysia':", correctType: "KHAS", options: ["Kata Nama Am", "Kata Nama Khas"], obstacle: "🏔️" }
+        ];
+
+        /* Game State Variables */
+        let currentLevel = 0;
+        let score = 0;
+        let isGrammarCorrect = false;
+        let isSpeechCorrect = false;
+        let isListening = false;
+        let recognition = null;
+
+        /* Synthetic Sound Generator (Web Audio API) */
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'correct') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.3); // A5
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'drive') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(300, audioCtx.currentTime + 0.8);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.8);
+            }
+        }
+
+        function playSentenceTTS() {
+            const level = GAME_LEVELS[currentLevel];
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Stop any active speech
+                const utterance = new SpeechSynthesisUtterance(level.sentence);
+                utterance.lang = 'ms-MY';
+                utterance.rate = 0.85; // Slower rate for clear primary school listening
+                window.speechSynthesis.speak(utterance);
+            } else {
+                alert("Sistem ucapan tidak disokong pada pelayar ini.");
+            }
+        }
+
+        /* Initialize Web Speech Recognition API */
+        function initSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRecognition) {
+                recognition = new SpeechRecognition();
+                recognition.lang = 'ms-MY';
+                recognition.continuous = false;
+                recognition.interimResults = false;
+
+                recognition.onstart = function() {
+                    isListening = true;
+                    updateMicUI(true, "🎤 Sila baca ayat dengan jelas...");
+                };
+
+                recognition.onresult = function(event) {
+                    const transcript = event.results[0][0].transcript;
+                    validateSpeech(transcript);
+                };
+
+                recognition.onerror = function(event) {
+                    console.warn("Speech recognition error:", event.error);
+                    updateMicUI(false, "🔊 Suara tidak cukup jelas. Sila cuba lagi.");
+                    playSound('wrong');
+                };
+
+                recognition.onend = function() {
+                    isListening = false;
+                    if (!isSpeechCorrect) {
+                        updateMicUI(false, "Tekan semula mikrofon untuk sebut ayat.");
+                    }
+                };
+            } else {
+                console.warn("Web Speech Recognition API not natively supported.");
+            }
+        }
+
+        function toggleSpeechRecognition() {
+            if (!recognition) {
+                // Fallback if Speech API is unsupported or disabled
+                simulateSpeechSuccess();
+                return;
+            }
+
+            if (isListening) {
+                recognition.stop();
+            } else {
+                try {
+                    recognition.start();
+                } catch(e) {
+                    recognition.stop();
+                    setTimeout(() => recognition.start(), 200);
+                }
+            }
+        }
+
+        /* Fuzzy Text Matcher (Levenshtein Distance for Primary School Speech Tolerance) */
+        function calculateSimilarity(s1, s2) {
+            function clean(text) {
+                return text.toLowerCase().replace(/[^\w\s]/gi, '').replace(/\s+/g, ' ').trim();
+            }
+
+            const str1 = clean(s1);
+            const str2 = clean(s2);
+
+            if (str1 === str2) return 1.0;
+            if (str1.length === 0 || str2.length === 0) return 0.0;
+
+            // Word overlap matching helper
+            const words1 = str1.split(' ');
+            const words2 = str2.split(' ');
+            let matches = 0;
+            words1.forEach(w => {
+                if (words2.includes(w)) matches++;
+            });
+            const wordScore = matches / Math.max(words1.length, words2.length);
+
+            // Levenshtein distance
+            const track = Array(str2.length + 1).fill(null).map(() =>
+                Array(str1.length + 1).fill(null));
+            for (let i = 0; i <= str1.length; i += 1) track[0][i] = i;
+            for (let j = 0; j <= str2.length; j += 1) track[j][0] = j;
+
+            for (let j = 1; j <= str2.length; j += 1) {
+                for (let i = 1; i <= str1.length; i += 1) {
+                    const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
+                    track[j][i] = Math.min(
+                        track[j][i - 1] + 1,
+                        track[j - 1][i] + 1,
+                        track[j - 1][i - 1] + indicator
+                    );
+                }
+            }
+
+            const levDistance = track[str2.length][str1.length];
+            const levScore = 1 - (levDistance / Math.max(str1.length, str2.length));
+
+            return Math.max(wordScore, levScore);
+        }
+
+        function validateSpeech(userSpokenText) {
+            const level = GAME_LEVELS[currentLevel];
+            const similarity = calculateSimilarity(userSpokenText, level.sentence);
+
+            // Acceptance threshold set at >= 70% to support primary and special need pupils
+            if (similarity >= 0.70) {
+                isSpeechCorrect = true;
+                playSound('correct');
+                updateMicUI(false, "🎉 SEBUTAN TEPAT!");
+                document.getElementById('russell-bubble').innerText = "Sebutan Hebat! 🚗";
+                handleLevelSuccess();
+            } else {
+                playSound('wrong');
+                updateMicUI(false, `🔊 "Sebut sekali lagi dengan lebih jelas."`);
+            }
+        }
+
+        function simulateSpeechSuccess() {
+            // Accessible fallback option
+            validateSpeech(GAME_LEVELS[currentLevel].sentence);
+        }
+
+        function updateMicUI(listening, statusMsg) {
+            const btnMic = document.getElementById('btn-mic');
+            const micIcon = document.getElementById('mic-icon');
+            const micText = document.getElementById('mic-text');
+            const statusLabel = document.getElementById('speech-status');
+
+            statusLabel.innerText = statusMsg;
+
+            if (listening) {
+                btnMic.classList.add('mic-listening', 'bg-red-700');
+                micIcon.innerText = "🎙️";
+                micText.innerText = "MENDENGAR...";
+            } else {
+                btnMic.classList.remove('mic-listening', 'bg-red-700');
+                micIcon.innerText = "🎤";
+                micText.innerText = "SEBUT AYAT";
+            }
+        }
+
+        function loadLevel(index) {
+            isGrammarCorrect = false;
+            isSpeechCorrect = false;
+
+            const level = GAME_LEVELS[index];
+
+            // Render Header Metrics
+            document.getElementById('level-display').innerText = `${index + 1} / ${GAME_LEVELS.length}`;
+            document.getElementById('score-display').innerText = score;
+            
+            const progressPercent = Math.round(((index + 1) / GAME_LEVELS.length) * 100);
+            document.getElementById('progress-bar-fill').style.width = `${progressPercent}%`;
+            document.getElementById('progress-text').innerText = `${progressPercent}% SAMPAI PUNCAK BAHASA`;
+
+            // Render Section & Sentence Text
+            document.getElementById('section-badge').innerText = level.title;
+            
+            // Highlight target word inside sentence with high contrast style
+            const highlightedSentence = level.sentence.replace(
+                level.targetWord,
+                `<span class="bg-amber-300 text-slate-950 px-2 py-0.5 rounded-lg underline decoration-blue-600 decoration-4">${level.targetWord}</span>`
+            );
+            document.getElementById('sentence-display').innerHTML = `"${highlightedSentence}"`;
+
+            // Setup Scenery Obstacle
+            document.getElementById('obstacle-container').innerText = level.obstacle;
+            
+            // Reset Car Position
+            const carWrapper = document.getElementById('car-wrapper');
+            carWrapper.className = "car-container absolute bottom-6 left-8 sm:left-12 flex flex-col items-center";
+            document.getElementById('russell-bubble').innerText = "Jom kembara! 🚗";
+
+            // Render Step 1 Questions
+            document.getElementById('question-prompt').innerText = level.question;
+            const optionsGrid = document.getElementById('options-grid');
+            optionsGrid.innerHTML = '';
+
+            level.options.forEach(opt => {
+                const isKhasOption = opt.toLowerCase().includes('khas');
+                const optType = isKhasOption ? 'KHAS' : 'AM';
+
+                const btn = document.createElement('button');
+                btn.className = "accessible-btn bg-white hover:bg-amber-100 text-slate-900 font-extrabold text-xl py-4 px-6 rounded-2xl flex items-center justify-center gap-3 w-full shadow-md";
+                btn.innerHTML = `<span class="text-2xl">${isKhasOption ? '🏷️' : '📦'}</span> ${opt}`;
+                btn.onclick = () => checkGrammarAnswer(optType, btn);
+                optionsGrid.appendChild(btn);
+            });
+
+            // Toggle Panel Views
+            document.getElementById('step-grammar-container').classList.remove('hidden');
+            document.getElementById('step-grammar-container').classList.add('flex');
+            document.getElementById('step-speech-container').classList.add('hidden');
+            document.getElementById('step-speech-container').classList.remove('flex');
+            document.getElementById('step-next-container').classList.add('hidden');
+            document.getElementById('step-next-container').classList.remove('flex');
+            document.getElementById('feedback-banner').classList.add('hidden');
+        }
+
+        function checkGrammarAnswer(selectedType, btnElement) {
+            const level = GAME_LEVELS[currentLevel];
+
+            if (selectedType === level.correctType) {
+                playSound('correct');
+                isGrammarCorrect = true;
+                
+                showFeedback("✓ BETUL! Sila sebut ayat di bawah.", "bg-emerald-500", "text-slate-900");
+
+                // Advance to Step 2 (Speech)
+                setTimeout(() => {
+                    document.getElementById('step-grammar-container').classList.add('hidden');
+                    document.getElementById('step-grammar-container').classList.remove('flex');
+                    document.getElementById('step-speech-container').classList.remove('hidden');
+                    document.getElementById('step-speech-container').classList.add('flex');
+                    document.getElementById('feedback-banner').classList.add('hidden');
+                }, 800);
+
+            } else {
+                playSound('wrong');
+                showFeedback("✗ CUBA LAGI! Pilih jawapan yang tepat.", "bg-red-500", "text-white");
+            }
+        }
+
+        function showFeedback(message, bgColor, textColor) {
+            const banner = document.getElementById('feedback-banner');
+            banner.className = `w-full text-center py-3 px-4 rounded-xl font-black text-lg sm:text-xl ${bgColor} ${textColor}`;
+            banner.innerText = message;
+            banner.classList.remove('hidden');
+        }
+
+        function handleLevelSuccess() {
+            score += 10;
+            document.getElementById('score-display').innerText = score;
+            playSound('drive');
+
+            // Trigger CSS Car Moving Animation
+            const carWrapper = document.getElementById('car-wrapper');
+            carWrapper.classList.add('car-pass-obstacle');
+
+            // Show Step 3 Next Button (Do not advance automatically)
+            setTimeout(() => {
+                document.getElementById('step-speech-container').classList.add('hidden');
+                document.getElementById('step-speech-container').classList.remove('flex');
+                document.getElementById('step-next-container').classList.remove('hidden');
+                document.getElementById('step-next-container').classList.add('flex');
+            }, 1200);
+        }
+
+        function goToNextLevel() {
+            if (currentLevel < GAME_LEVELS.length - 1) {
+                currentLevel++;
+                loadLevel(currentLevel);
+            } else {
+                showCompletionScreen();
+            }
+        }
+
+        function showCompletionScreen() {
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('completion-modal').classList.remove('hidden');
+            playSound('correct');
+        }
+
+        function restartGame() {
+            currentLevel = 0;
+            score = 0;
+            document.getElementById('completion-modal').classList.add('hidden');
+            loadLevel(0);
+        }
+
+        window.onload = function() {
+            initSpeechRecognition();
+            loadLevel(0);
+        };
+    </script>
+</body>
+</html>
