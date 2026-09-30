@@ -1,0 +1,1 @@
+# Kata-Nama-Am-dan-Khas
